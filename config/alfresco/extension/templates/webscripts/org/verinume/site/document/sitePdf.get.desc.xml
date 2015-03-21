@@ -1,0 +1,8 @@
+<webscript>
+    <shortname>SitePdf</shortname>
+    <description>webscript to get all pdf documents from site</description>
+    <url>/site/document/pdf?site={site?}&amp;path={path?}</url>
+    <format default="text">extension</format>
+    <authentication>user</authentication>
+    <transaction>required</transaction>
+</webscript>

@@ -1,0 +1,19 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE beans PUBLIC '-//SPRING//DTD BEAN//EN' 'http://www.springframework.org/dtd/spring-beans.dtd'>
+<beans>
+
+    <bean id="webscript.org.verinume.site.document.sitePdf.get" class="com.verinume.alfresco.export.VerinumeExportToExcel"
+          parent="webscript">
+        <property name="nodeService" ref="nodeService"/>
+        <property name="siteService" ref="siteService"/>
+        <property name="searchService" ref="searchService"/>
+        <property name="verinumeUtil" ref="verinumeUtil"/>
+        <property name="contentService" ref="contentService"/>
+    </bean>
+
+    <bean id="verinumeUtil" class="com.verinume.alfresco.util.VerinumeUtilImpl">
+        <property name="nodeService" ref="nodeService"/>
+        <property name="namespaceService" ref="namespaceService"/>
+    </bean>
+
+</beans>
