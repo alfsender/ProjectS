@@ -1,0 +1,232 @@
+<?xml version="1.0"?>
+
+<project name="Verinume"  basedir=".">
+
+	<property name="project.dir" value="." />
+	<property file="${project.dir}/build.properties" />
+	<property name="build.dir" value="${project.dir}/build/classes" />
+	<property name="js.min.file.location.dir" value="${project.dir}/build/min-js-dir" />
+	
+	<property name="web.dir.share" value="${project.dir}/source/web/components" />
+	<property name="web.dir.js" value="${project.dir}/source/web/js" />
+	<property name="web.dir.css" value="${project.dir}/source/web/css" />
+	<property name="web.dir.themes" value="${project.dir}/source/web/themes" />
+	<property name="web.dir.yui" value="${project.dir}/source/web/yui" />
+	<property name="web.dir.modules" value="${project.dir}/source/web/modules" />
+	
+	<property name="web-inf.dir.alfresco" value="${project.dir}/web/alfresco" />
+	<property name="web-inf.dir.share" value="${project.dir}/web/share" />
+	
+	<property name="package.file.jar" value="${project.dir}/deploy/verinume-repo.jar" />
+	<property name="package.file.share.jar" value="${project.dir}/deploy/verinume-share.jar" />
+	<property name="package.file.zip" value="${project.dir}/deploy/verinume-repo.zip" />
+	<property name="package.share.file.zip" value="${project.dir}/deploy/verinume-share.zip" />
+	
+	<property name="config.share.dir" value="${project.dir}/config/alfresco/web-extension" />
+	<property name="config.dir" value="${project.dir}/config/alfresco/extension" />
+	<property name="config.messages.dir" value="${project.dir}/config/alfresco/messages" />
+    <property name="yuicompress.warn" value="false" />
+
+	<path id="class.path">
+		<dirset dir="${build.dir}" />
+		<fileset dir="${project.dir}/lib/alfresco/third_party" includes="*.jar" />
+		<!-- CUSTOM :: added third_party_lib for compile -->
+		<fileset dir="${project.dir}/third_party_lib" includes="*.jar" />
+		<fileset dir="${project.dir}/lib/share/third_party" includes="*.jar" />
+		<fileset dir="${alfresco.work.home}/tomcat/webapps/alfresco/WEB-INF/lib" includes="*.jar" />
+		<fileset dir="${alfresco.work.home}/tomcat/lib" includes="*.jar" />
+	</path>
+	
+	<path id="yuicompressor.classpath">
+	    <fileset dir="third_party_lib">
+	        <include name="yuicompressor-2.4.2.jar"/>
+	        <include name="yui-compressor-ant-task-0.5.jar"/>
+	    </fileset>
+	</path>
+	
+	<taskdef name="yuicompress" classname="net.noha.tools.ant.yuicompressor.tasks.YuiCompressorTask">
+	    <classpath>
+		    <fileset dir="third_party_lib">
+		        <include name="yuicompressor-2.4.2.jar"/>
+		        <include name="yui-compressor-ant-task-0.5.jar"/>
+		    </fileset>
+	        <!--<path refid="yuicompressor.classpath" />-->
+	    </classpath>
+	</taskdef>
+
+	<target name="clean">
+		<delete dir="${build.dir}" />
+		<delete dir="${js.min.file.location.dir}" />
+	</target>
+
+	<!-- COMPILE TARGET -->
+	<target name="compile" depends="clean">
+		<mkdir dir="${build.dir}" />
+		<!-- CUSTOM :: While compiling lets copy opencsv jar to alfresco's WEB-INF/lib -->
+		<copy todir="${alfresco.work.home}/tomcat/webapps/alfresco/WEB-INF/lib" includeEmptyDirs="false">
+	            <fileset dir="${project.dir}/lib/alfresco/third_party">
+	                <filename name="opencsv-2.3.jar" />
+	            </fileset>
+		</copy>
+		<javac classpathref="class.path" srcdir="${project.dir}/source/java" destdir="${build.dir}" debug="true"/>
+	</target>
+
+	<target name="package-jar" depends="compile">
+		<mkdir dir="${project.dir}/deploy" />
+		<delete file="${package.file.jar}" />
+		<delete file="${package.file.share.jar}" />
+		<!-- CUSTOM :: Repo excludes evaluator -->
+		<jar destfile="${package.file.jar}">
+			<fileset dir="${build.dir}" excludes="**/web/,*.zip,*.jar" />
+		</jar>
+		<!-- CUSTOM :: Share includes evaluator -->
+		<jar destfile="${package.file.share.jar}" >
+			<fileset dir="${build.dir}" excludes="*.zip,*.jar" includes="**/web/evaluator/*.class"/>
+		</jar>
+		 <!--<jar destfile="${project.dir}/${package.file.share.jar}" >
+			<fileset dir="${build.dir}" excludes="*.zip,*.jar" includes="**/web/evaluator/*.class"/>
+		 </jar>-->
+		<!--<delete file="${package.file.share.jar}" />-->
+	</target>
+
+	<target name="package-zip-extension" depends="package-jar">
+		<delete file="${package.file.zip}" />
+		<delete file="${package.share.file.zip}" />
+
+		<zip destfile="${package.file.zip}">
+			<zipfileset dir="${config.dir}" prefix="shared/classes/alfresco/extension" />
+			<zipfileset dir="${config.messages.dir}" prefix="shared/classes/alfresco/messages" />
+		</zip>
+		
+		<!-- Minify JS -->
+		<mkdir dir="${js.min.file.location.dir}"/> 
+		<mkdir dir="${js.min.file.location.dir}/components"/>
+		<mkdir dir="${js.min.file.location.dir}/js"/>
+		<mkdir dir="${js.min.file.location.dir}/modules"/>
+		
+		<yuicompress fromdir="${web.dir.share}" todir="${js.min.file.location.dir}/components" excludes="**/*-min.js" warn="${yuicompress.warn}" >
+		        <include name="**/*.js" />
+		</yuicompress>
+		
+		<yuicompress fromdir="${web.dir.js}" todir="${js.min.file.location.dir}/js" excludes="**/*-min.js" warn="${yuicompress.warn}" >
+		            <include name="**/*.js" />
+		</yuicompress>
+		
+		<yuicompress fromdir="${web.dir.modules}" todir="${js.min.file.location.dir}/modules" excludes="**/*-min.js" warn="${yuicompress.warn}" >
+				            <include name="**/*.js" />
+		</yuicompress>
+		
+		<zip destfile="${package.share.file.zip}">
+			<zipfileset dir="${config.share.dir}" prefix="shared/classes/alfresco/web-extension" />
+			<zipfileset dir="${web.dir.share}/" prefix="webapps/share/components" />
+			<zipfileset dir="${web.dir.js}/" prefix="webapps/share/js" />
+			<zipfileset dir="${web.dir.css}/" prefix="webapps/share/css" />
+			<zipfileset dir="${web.dir.themes}/" prefix="webapps/share/themes" />
+			<zipfileset dir="${web.dir.yui}/" prefix="webapps/share/yui" />
+			<zipfileset dir="${web.dir.modules}/" prefix="webapps/share/modules" />
+			<zipfileset dir="${js.min.file.location.dir}/components/" prefix="webapps/share/components" />
+			<zipfileset dir="${js.min.file.location.dir}/js/" prefix="webapps/share/js" />
+			<zipfileset dir="${js.min.file.location.dir}/modules/" prefix="webapps/share/modules" />
+		</zip>
+	</target>
+
+	<target name="extract-zip-extension" depends="package-zip-extension">
+		<unzip src="${package.file.zip}" dest="${alfresco.deploy.home}/tomcat/">
+		</unzip>
+	</target>
+	
+	<target name="extract-jar" depends="package-jar">
+		
+		<!-- COPY ALFRESCO BUILT-UP JAR TO ALFRESCO/WEB-INF/LIB -->
+		<copy todir="${alfresco.deploy.home}/tomcat/webapps/alfresco/WEB-INF/lib">
+			<fileset dir="${project.dir}/deploy" excludes="*.zip"/>
+		</copy>
+		
+		<!-- COPY SHARE THIRD PARTY LIB TO SHARE/WEB-INF/LIB -->
+		<copy todir="${alfresco.deploy.home}/tomcat/webapps/share/WEB-INF/lib">
+			<fileset dir="${project.dir}/lib/share/third_party" includes="*.jar"/>
+		</copy>
+		
+		<!-- COPY ALFRESCO THIRD PARTY LIB TO ALFRESCO/WEB-INF/LIB -->
+		<copy todir="${alfresco.deploy.home}/tomcat/webapps/alfresco/WEB-INF/lib">
+			<fileset dir="${project.dir}/lib/alfresco/third_party" includes="*.jar"/>
+		</copy>
+	</target>
+
+	<target name="deploy" depends="package-zip-extension" description="Unzips the ${package.file.zip} into ${alfresco.deploy.home}">
+		<unzip src="${package.share.file.zip}" dest="${alfresco.deploy.home}/tomcat/" />
+		<unzip src="${package.file.zip}" dest="${alfresco.deploy.home}/tomcat"/>
+
+		<!-- COPY SHARE THIRD PARTY LIB TO SHARE/WEB-INF/LIB -->
+		<copy todir="${alfresco.deploy.home}/tomcat/webapps/share/WEB-INF/lib">
+			<fileset dir="${project.dir}/lib/share/third_party" includes="*.jar"/>
+		</copy>
+		
+		<!-- COPY ALFRESCO THIRD PARTY LIB TO ALFRESCO/WEB-INF/LIB -->
+		<copy todir="${alfresco.deploy.home}/tomcat/webapps/alfresco/WEB-INF/lib">
+			<fileset dir="${project.dir}/lib/alfresco/third_party" includes="*.jar"/>
+		</copy>
+
+		<!-- COPY ALFRESCO BUILT-UP JAR TO ALFRESCO/WEB-INF/LIB -->
+		<copy todir="${alfresco.deploy.home}/tomcat/webapps/alfresco/WEB-INF/lib">
+			<fileset dir="${project.dir}/deploy" excludes="*.zip,*-share.jar"/>
+		</copy>
+		
+		<!-- COPY SHARE JAR TO SHARE/WEB-INF/LIB  location -->
+		<copy todir="${alfresco.deploy.home}/tomcat/webapps/share/WEB-INF/lib">
+					<fileset dir="${project.dir}/deploy" excludes="*.zip,*-repo.jar"/>
+		</copy>
+
+		<copy todir="${alfresco.deploy.home}/tomcat/webapps/alfresco">
+			<fileset dir="${web-inf.dir.alfresco}"/>
+		</copy>
+		
+		<copy todir="${alfresco.deploy.home}/tomcat/webapps/share">
+			<fileset dir="${web-inf.dir.share}"/>
+		</copy>
+		
+	</target>
+	
+	<target name="organize_dev">
+		<copy overwrite="true" todir="${alfresco.deploy.home}/tomcat/shared/classes">
+			<fileset dir="${project.dir}/environment/dev" />
+		</copy>
+	</target>
+	<target name="organize_qa">
+		<copy overwrite="true" todir="${alfresco.deploy.home}/tomcat/shared/classes">
+			<fileset dir="${project.dir}/environment/qa" />
+		</copy>
+	</target>
+	<target name="organize_uat">
+		<copy overwrite="true" todir="${alfresco.deploy.home}/tomcat/shared/classes">
+			<fileset dir="${project.dir}/environment/uat" />
+		</copy>
+	</target>
+	<target name="organize_prod">
+		<copy overwrite="true" todir="${alfresco.deploy.home}/tomcat/shared/classes">
+			<fileset dir="${project.dir}/environment/prod" />
+		</copy>
+	</target>
+	
+	<target depends="deploy,organize_dev" name="deploy-dev" />
+	<target depends="deploy,organize_qa" name="deploy-qa" />
+	<target depends="deploy,organize_uat" name="deploy-uat" />
+	<target depends="deploy,organize_prod" name="deploy-prod" />
+
+	<target name="start">
+		<exec dir="${alfresco.work.home}/tomcat/bin" executable="cmd">
+			<arg value="/c" />
+			<arg value="startup.bat" />
+		</exec>
+	</target>
+	
+	<target name="stop">
+		<exec dir="${alfresco.work.home}/tomcat/bin" executable="cmd">
+			<arg value="/c" />
+			<arg value="shutdown.bat" />
+		</exec>
+	</target>
+	
+	
+	
+</project>
