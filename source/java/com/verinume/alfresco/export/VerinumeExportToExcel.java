@@ -4,8 +4,6 @@ import com.verinume.alfresco.constant.AlfrescoConstants;
 import com.verinume.alfresco.util.VerinumeUtil;
 import org.alfresco.model.ContentModel;
 import org.alfresco.model.ForumModel;
-import org.alfresco.repo.jscript.ScriptNode;
-import org.alfresco.service.cmr.model.FileFolderService;
 import org.alfresco.service.cmr.repository.*;
 import org.alfresco.service.cmr.search.ResultSet;
 import org.alfresco.service.cmr.search.SearchService;
@@ -186,10 +184,11 @@ public class VerinumeExportToExcel extends AbstractWebScript implements WebScrip
                         NodeRef commentNode = commentRef.getChildRef();
                         if (newRow) {
                             rowNum = rowNum + 1;
-                            row = sheet.createRow(rowNum++);
+                            row = sheet.createRow(rowNum);
                         }
                         HSSFCell commentCell = (HSSFCell) row.createCell(1);
                         ContentReader reader = contentService.getReader(commentNode, ContentModel.PROP_CONTENT);
+
                         HSSFRichTextString comment = new HSSFRichTextString(reader.getContentString());
                         commentCell.setCellValue(comment);
                         commentCell.setCellStyle(style);
